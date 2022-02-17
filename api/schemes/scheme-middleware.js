@@ -1,4 +1,3 @@
-const Schemes = require('./scheme-model')
 const db = require('../../data/db-config')
 
 /*

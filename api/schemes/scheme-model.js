@@ -111,7 +111,7 @@ async function findById(scheme_id) { // EXERCISE B
   return result
 }
 
-function findSteps(scheme_id) { // EXERCISE C
+async function findSteps(scheme_id) { // EXERCISE C
   /*
     1C- Build a query in Knex that returns the following data.
     The steps should be sorted by step_number, and the array
@@ -131,12 +131,20 @@ function findSteps(scheme_id) { // EXERCISE C
         }
       ]
   */
-  return db('steps as st')
-    .leftJoin('schemes as sc', 'sc.scheme_id', 'st.scheme_id')
-    .select('st.step_id', 'st.step_number', 'st.instructions', 'sc.scheme_name')
-    .where('st.scheme_id', scheme_id)
-    // .groupBy('st.scheme_name')
-    .orderBy('st.step_number', 'ASC')
+  // return db('steps as st')
+  //   .leftJoin('schemes as sc', 'sc.scheme_id', 'st.scheme_id')
+  //   .select('st.step_id', 'st.step_number', 'st.instructions', 'sc.scheme_name')
+  //   .where('st.scheme_id', scheme_id)
+  //   .orderBy('st.step_number', 'ASC')
+
+  const rows = await db('schemes as sc')
+      .leftJoin('steps as st', 'sc.scheme_id', 'st.scheme_id')
+      .select('st.step_id', 'st.step_number', 'instructions', 'sc.scheme_name')
+      .where('sc.scheme_id', scheme_id)
+      .orderBy('step_number')
+
+    if (!rows[0].step_id) return []
+    return rows
 
 }
 
@@ -145,8 +153,13 @@ async function add(scheme) { // EXERCISE D
     1D- This function creates a new scheme and resolves to _the newly created scheme_.
   */
 
-  const newScheme = await db('schemes').insert({ 'scheme_name': scheme.scheme_name });
-  return findById(newScheme)
+  // const newScheme = await db('schemes').insert({ 'scheme_name': scheme.scheme_name });
+  // return findById(newScheme)
+
+  return db('schemes').insert(scheme)
+    .then(([scheme_id]) => {
+      return db('schemes').where('scheme_id', scheme_id).first()
+    })
 
 }
 
@@ -157,23 +170,10 @@ async function addStep(scheme_id, step) { // EXERCISE E
     including the newly created one.
   */
 
-
-  // db('steps as st').insert(newStep)
-  // return findById(scheme_id)
-  // const newStep = {
-  //   'scheme_id': scheme_id,
-  //   'instructions': step.instructions,
-  //   'step_number': step.step_number
-  // }
-
   await db('steps').insert({
-    'scheme_id': scheme_id,
-    'instructions': step.instructions,
-    'step_number': step.step_number
+    ...step,
+    scheme_id
   })
-
-
-
 
   return findSteps(scheme_id)
 }
